@@ -1,20 +1,13 @@
 import { IsEmail, IsNotEmpty, IsString, isNotEmpty } from 'class-validator';
+import { LoginDto } from './login.dto';
 
-export class CreateUserDto {
-  @IsEmail()
-  @IsNotEmpty({ message: '이메일을 다시 입력해주세요' })
-  email: string;
-
-  @IsString()
-  @IsNotEmpty({ message: '비밀번호를 입력해주세요' })
-  password: string;
-
+export class CreateUserDto extends LoginDto {
   @IsString()
   @IsNotEmpty({ message: '비밀번호확인을 입력해주세요' })
   passwordCheck: string;
 
   @IsString()
-  @IsNotEmpty({ message: '비밀번호를 입력해주세요' })
+  @IsNotEmpty({ message: '닉네임을 입력해주세요' })
   nickName: string;
 
   @IsString()
