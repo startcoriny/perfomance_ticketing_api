@@ -16,9 +16,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly userService: UserService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: configService.get('JWT_SECRET_KEY'),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(), // JWT의 추출 방법
+      ignoreExpiration: false, // 만료 확인 여부
+      secretOrKey: configService.get('JWT_SECRET_KEY'), // 비밀 키
     });
   }
 
@@ -26,7 +26,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     console.log('payload => ', payload);
 
-    const user = await this.userService.findByEmail(payload.email);
+    const user = await this.userService.findByEmail(payload.userEmail);
+    console.log(user);
+
     if (_.isNil(user)) {
       throw new NotFoundException('해당하는 사용자를 찾을 수 없습니다.');
     }

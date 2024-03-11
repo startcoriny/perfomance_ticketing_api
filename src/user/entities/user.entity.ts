@@ -1,13 +1,6 @@
-import { timeStamp } from 'console';
-import { date } from 'joi';
-import {
-  Column,
-  Entity,
-  OneToMany,
-  PrimaryGeneratedColumn,
-  Timestamp,
-} from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Point } from '../../point/entities/point.entity';
+import { Performance } from 'src/performance/entities/performance.entity';
 
 @Entity({
   name: 'users',
@@ -41,4 +34,7 @@ export class User {
 
   @OneToMany(() => Point, (point) => point.user)
   point: Point[];
+
+  @OneToMany(() => Performance, (performance) => performance.user)
+  performance: Performance[];
 }

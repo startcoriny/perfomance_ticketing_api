@@ -30,7 +30,7 @@ export class Point {
   })
   createAt: Date;
 
-  @ManyToOne(() => User, (user) => user.point)
+  @ManyToOne(() => User, (user) => user.point, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
 }
