@@ -31,7 +31,6 @@ export class UserService {
     role: string,
   ) {
     const isExistUser = await this.findByEmail(email);
-    console.log('isExistUser => ', isExistUser);
 
     if (isExistUser) {
       throw new ConflictException(
@@ -97,11 +96,11 @@ export class UserService {
   async profile(email: string) {
     try {
       const user = await this.userRepository
-        .createQueryBuilder('user')
-        .leftJoinAndSelect('user.point', 'point')
-        .select(['user.email', 'user.nickName', 'user.isAdmin', 'point.point'])
+        .createQueryBuilder('user') //사용자 엔티티에 대한 새로운 쿼리 빌더만듬.
+        .leftJoinAndSelect('user.point', 'point') //user 테이블과 point 테이블을 왼쪽 조인하고 point테이블 선택
+        .select(['user.email', 'user.nickName', 'user.isAdmin', 'point.point']) //결과로 반환할 열을 지정
         .where('user.email = :email', { email })
-        .getOne();
+        .getOne(); //쿼리를 실행하고, 결과를 단일 사용자 객체로 가져옴.
 
       if (!user) {
         throw new NotFoundException('User not found');

@@ -1,6 +1,8 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Point } from '../../point/entities/point.entity';
 import { Performance } from 'src/performance/entities/performance.entity';
+import { Reservation } from 'src/reservation/entities/reservation.entity';
+import { DetailReservation } from 'src/reservation/entities/detailReservation.entity';
 
 @Entity({
   name: 'users',
@@ -37,4 +39,7 @@ export class User {
 
   @OneToMany(() => Performance, (performance) => performance.user)
   performance: Performance[];
+
+  @OneToMany(() => Reservation, (reservation) => reservation.user)
+  reservation: Reservation[];
 }

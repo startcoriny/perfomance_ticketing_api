@@ -4,11 +4,13 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
 } from 'typeorm';
 import { Category } from '../types/categoryRole.type';
 import { User } from 'src/user/entities/user.entity';
+import { DetailReservation } from 'src/reservation/entities/detailReservation.entity';
 
 @Entity({
   name: 'performances',
@@ -56,4 +58,10 @@ export class Performance {
   @ManyToOne(() => User, (user) => user.performance)
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @OneToMany(
+    () => DetailReservation,
+    (detailReservation) => detailReservation.performance,
+  )
+  detailReservation: DetailReservation[];
 }
