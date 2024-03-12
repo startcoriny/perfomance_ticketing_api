@@ -9,7 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ReservationService } from './reservation.service';
-import { CreateReservationDto } from './dto/create-reservation.dto';
+import { SeatDto } from './dto/seat.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from 'src/user/entities/user.entity';
@@ -22,8 +22,12 @@ export class ReservationController {
   constructor(private readonly reservationService: ReservationService) {}
 
   @Post(':id')
-  buyTicket(@Param('id') id: bigint, @UserInfo() user: User) {
-    return this.reservationService.buyTicket(id, user.id);
+  buyTicket(
+    @Param('id') id: bigint,
+    @UserInfo() user: User,
+    @Body() seatDto: SeatDto,
+  ) {
+    return this.reservationService.buyTicket(id, user.id, seatDto.seatNum);
   }
 
   @Get()

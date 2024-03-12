@@ -15,6 +15,7 @@ import { Performance } from './performance/entities/performance.entity';
 import { ReservationModule } from './reservation/reservation.module';
 import { Reservation } from './reservation/entities/reservation.entity';
 import { DetailReservation } from './reservation/entities/detailReservation.entity';
+import { Seat } from './performance/entities/seat.entity';
 
 const typeOrmModuleOptions = {
   useFactory: async (
@@ -27,7 +28,7 @@ const typeOrmModuleOptions = {
     host: configService.get('DB_HOST'),
     port: configService.get('DB_PORT'),
     database: configService.get('DB_NAME'),
-    entities: [User, Point, Performance, Reservation, DetailReservation],
+    entities: [User, Point, Performance, Reservation, DetailReservation, Seat],
     synchronize: configService.get('DB_SYNC'), // 데이터베이스 스키마와 애플리케이션의 엔티티 클래스 간의 동기화를 제어, 일반적으로 false로 설정하여 동기화를 방지
     logging: true, // 데이터베이스 쿼리를 로깅할지 여부를 제어, 이 옵션을 true로 설정하면 TypeORM이 실행된 쿼리를 콘솔에 로그로 출력
   }),

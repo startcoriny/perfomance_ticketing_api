@@ -1,5 +1,4 @@
 import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
-import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Connection, DataSource, Repository } from 'typeorm';
@@ -7,6 +6,7 @@ import { Reservation } from './entities/reservation.entity';
 import { Performance } from 'src/performance/entities/performance.entity';
 import { Point } from 'src/point/entities/point.entity';
 import { DetailReservation } from './entities/detailReservation.entity';
+import { Seat } from 'src/performance/entities/seat.entity';
 
 @Injectable()
 export class ReservationService {
@@ -23,7 +23,7 @@ export class ReservationService {
   ) {}
 
   // 예매하기
-  async buyTicket(performanceId: bigint, userId: bigint) {
+  async buyTicket(performanceId: bigint, userId: bigint, seatNum: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -35,8 +35,6 @@ export class ReservationService {
           4. 예매시 총 좌석(performance) - 예매한 좌석의 갯수(detailReservation). = 남은 좌석의 갯수 업데이트
           5. 예매시 유저의 포인트에서 차감 user.point - seat.price
       */
-      const ticketPrice = 30000;
-      const totSeat = 50;
 
       let performance: Performance = await queryRunner.manager
         .getRepository(Performance)
@@ -44,8 +42,17 @@ export class ReservationService {
           where: { id: performanceId },
         });
 
-      if (0 >= performance.seat) {
+      if (0 >= performance.totalSeat) {
         throw new BadRequestException('남은 좌석이 존재하지 않습니다.');
+      }
+
+      // 지정한 자리 찾기
+      let seat = await queryRunner.manager.getRepository(Seat).findOne({
+        where: { seatNum },
+      });
+
+      if (seat.isReserved === true) {
+        throw new Error('이미 예매된 좌석 입니다.');
       }
 
       let point = await queryRunner.manager.getRepository(Point).findOne({
@@ -55,8 +62,9 @@ export class ReservationService {
 
       console.log('point => ', point);
       console.log('performance => ', performance);
+      console.log('seat => ', seat);
 
-      if (point.point < ticketPrice) {
+      if (Number(point.point) < Number(seat.price)) {
         throw new BadRequestException('잔액이 부족합니다.');
       }
 
@@ -65,7 +73,7 @@ export class ReservationService {
         .getRepository(Reservation)
         .save({
           userId: userId,
-          totalPrice: BigInt(ticketPrice),
+          totalPrice: BigInt(seat.price),
         });
 
       console.log('performanceId => ', performanceId);
@@ -78,31 +86,41 @@ export class ReservationService {
         seatCount: 1, // 일단 1
       });
 
+      // 좌석 정보 저장
+      await queryRunner.manager
+        .getRepository(Seat)
+        .update({ seatNum }, { isReserved: true });
+
+      // 총 좌석 갯수
+      const totSeatCount = await queryRunner.manager
+        .getRepository(Seat)
+        .count();
+
       // 총 몇자리가 예매됬는지 확인
-      const count = await queryRunner.manager
-        .getRepository(DetailReservation)
+      const totIsReservationCount = await queryRunner.manager
+        .getRepository(Seat)
         .count({
-          where: { performanceId: performanceId },
+          where: { isReserved: true },
         });
 
-      console.log('count => ', count);
-
-      if (count > 0) {
-        throw new Error('에러생겼다 다 돌아가라');
-      }
+      console.log('totIsReservationCount => ', totIsReservationCount);
 
       // const updateSeat = performance.seat - count;
 
       // 남은 자리 업데이트
       await queryRunner.manager
         .getRepository(Performance)
-        .update({ id: performanceId }, { seat: totSeat - count });
+        .update(
+          { id: performanceId },
+          { totalSeat: totSeatCount - totIsReservationCount },
+        );
 
       // 포인트 차감
+      let minPoint = seat.price;
       await queryRunner.manager.getRepository(Point).update(
         { userId: userId },
         {
-          point: point.point - ticketPrice,
+          point: point.point - Number(minPoint),
           pointHistory: `${performance.name}공연 결제 완료`,
         },
       );

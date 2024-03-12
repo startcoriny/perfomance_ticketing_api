@@ -11,6 +11,7 @@ import {
 import { Category } from '../types/categoryRole.type';
 import { User } from 'src/user/entities/user.entity';
 import { DetailReservation } from 'src/reservation/entities/detailReservation.entity';
+import { Seat } from './seat.entity';
 
 @Entity({
   name: 'performances',
@@ -37,7 +38,7 @@ export class Performance {
   place: string;
 
   @Column({ type: 'int', nullable: false })
-  seat: number;
+  totalSeat: number;
 
   @Column({ type: 'varchar', nullable: false })
   image: string;
@@ -64,4 +65,7 @@ export class Performance {
     (detailReservation) => detailReservation.performance,
   )
   detailReservation: DetailReservation[];
+
+  @OneToMany(() => Seat, (seat) => seat.performance)
+  seat: Seat[];
 }
