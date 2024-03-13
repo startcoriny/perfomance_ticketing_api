@@ -1,20 +1,9 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { ReservationService } from './reservation.service';
 import { SeatDto } from './dto/seat.dto';
-import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from 'src/user/entities/user.entity';
 import { UserInfo } from 'src/util/userInfo.decorator';
-import { userInfo } from 'os';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('reservation')

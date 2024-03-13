@@ -4,11 +4,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreatePerformanceDto } from './dto/create-performance.dto';
-import { UpdatePerformanceDto } from './dto/update-performance.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Performance } from './entities/performance.entity';
 import { Like, Repository } from 'typeorm';
-import { Category } from './types/categoryRole.type';
 import _ from 'lodash';
 import { Seat } from './entities/seat.entity';
 

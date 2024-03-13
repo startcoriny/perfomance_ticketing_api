@@ -4,17 +4,19 @@ import { ReservationController } from './reservation.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Reservation } from './entities/reservation.entity';
 import { Performance } from 'src/performance/entities/performance.entity';
-import { Point } from 'src/point/entities/point.entity';
 import { DetailReservation } from './entities/detailReservation.entity';
+import { Seat } from 'src/performance/entities/seat.entity';
+import { PointModule } from 'src/point/point.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Reservation,
       Performance,
-      Point,
       DetailReservation,
+      Seat,
     ]),
+    PointModule,
   ],
   controllers: [ReservationController],
   providers: [ReservationService],

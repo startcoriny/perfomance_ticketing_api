@@ -1,12 +1,17 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
-import { UpdateReservationDto } from './dto/update-reservation.dto';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Connection, DataSource, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { Reservation } from './entities/reservation.entity';
 import { Performance } from 'src/performance/entities/performance.entity';
 import { Point } from 'src/point/entities/point.entity';
 import { DetailReservation } from './entities/detailReservation.entity';
 import { Seat } from 'src/performance/entities/seat.entity';
+import { PointService } from 'src/point/point.service';
 
 @Injectable()
 export class ReservationService {
@@ -15,11 +20,11 @@ export class ReservationService {
     private readonly reservationRepository: Repository<Reservation>,
     @InjectRepository(Performance)
     private readonly performanceRepository: Repository<Performance>,
-    @InjectRepository(Point)
-    private readonly pointRepository: Repository<Point>,
+    @InjectRepository(Seat)
+    private readonly seatRepository: Repository<Seat>,
     @InjectRepository(DetailReservation)
-    private readonly detailReservation: Repository<DetailReservation>,
     private readonly dataSource: DataSource,
+    private readonly pointService: PointService,
   ) {}
 
   // 예매하기
@@ -43,40 +48,31 @@ export class ReservationService {
         });
 
       if (0 >= performance.totalSeat) {
-        throw new BadRequestException('남은 좌석이 존재하지 않습니다.');
+        throw new NotFoundException('남은 좌석이 존재하지 않습니다.');
       }
 
       // 지정한 자리 찾기
-      let seat = await queryRunner.manager.getRepository(Seat).findOne({
+      let seat = await this.seatRepository.findOne({
         where: { seatNum },
       });
 
       if (seat.isReserved === true) {
-        throw new Error('이미 예매된 좌석 입니다.');
+        throw new ConflictException('이미 예매된 좌석 입니다.');
       }
 
-      let point = await queryRunner.manager.getRepository(Point).findOne({
-        select: ['point'],
-        where: { id: userId },
-      });
-
-      console.log('point => ', point);
-      console.log('performance => ', performance);
-      console.log('seat => ', seat);
+      let point = await this.pointService.checkPoint(userId);
 
       if (Number(point.point) < Number(seat.price)) {
         throw new BadRequestException('잔액이 부족합니다.');
       }
 
-      // 사용자가 선택한 공연 (이름, 날짜, 장소)
+      // 사용자가 선택한 공연저장 (이름, 날짜, 장소)
       const reservation = await queryRunner.manager
         .getRepository(Reservation)
         .save({
           userId: userId,
           totalPrice: BigInt(seat.price),
         });
-
-      console.log('performanceId => ', performanceId);
 
       // 예매정보 저장
       await queryRunner.manager.getRepository(DetailReservation).save({
@@ -102,8 +98,6 @@ export class ReservationService {
         .count({
           where: { isReserved: true },
         });
-
-      console.log('totIsReservationCount => ', totIsReservationCount);
 
       // const updateSeat = performance.seat - count;
 
@@ -154,8 +148,6 @@ export class ReservationService {
         ])
         .where('reservation.userId = :id', { id })
         .getRawMany(); // 엔티티에 대한 원시 데이터가 포함된 배열이 반환
-
-      console.log('reservation => ', reservation);
 
       // 예매 내역의 공연 아이디를 통해 제목, 내용, 시간, 카테고리 가져오기
       const performanceInfo = await Promise.all(
