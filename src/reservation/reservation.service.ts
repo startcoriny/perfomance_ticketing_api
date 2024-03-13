@@ -26,7 +26,7 @@ export class ReservationService {
   async buyTicket(performanceId: bigint, userId: bigint, seatNum: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
-    await queryRunner.startTransaction();
+    await queryRunner.startTransaction('READ COMMITTED'); // 격리수준 설정.
     try {
       /* 순서
           1. 예매하려는 공연의 잔여 좌석 조회 , 좌석이 없다면 에러 던짐
@@ -157,9 +157,9 @@ export class ReservationService {
 
       console.log('reservation => ', reservation);
 
+      // 예매 내역의 공연 아이디를 통해 제목, 내용, 시간, 카테고리 가져오기
       const performanceInfo = await Promise.all(
         reservation.map(async (RowDataPacket) => {
-          console.log(RowDataPacket.detailReservation_performanceId);
           const performanceInfos = await this.performanceRepository.find({
             select: ['name', 'content', 'date', 'place', 'category'],
             where: { id: RowDataPacket.detailReservation_performanceId },
@@ -169,7 +169,6 @@ export class ReservationService {
       );
 
       return performanceInfo;
-      // 예매 내역의 공연 아이디를 통해 제목, 내용, 시간, 카테고리 가져오기
     } catch (e) {
       throw new Error('내역을 찾을수가 없습니다.');
     }

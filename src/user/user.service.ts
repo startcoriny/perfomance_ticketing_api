@@ -4,33 +4,29 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import _ from 'lodash';
+
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { compare, hash } from 'bcrypt';
-import _ from 'lodash';
 import { JwtService } from '@nestjs/jwt';
-import { Point } from '../point/entities/point.entity';
+
+import { CreateUserDto } from './dto/create-user.dto';
+import { User } from './entities/user.entity';
+import { PointService } from 'src/point/point.service';
 
 @Injectable()
 export class UserService {
+  // 의존성 주입하기
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
-    @InjectRepository(Point)
-    private readonly pointRepository: Repository<Point>,
     private readonly jwtService: JwtService,
+    private readonly pointService: PointService,
   ) {}
 
   // 회원가입
-  async signUp(
-    email: string,
-    password: string,
-    nickName: string,
-    role: string,
-  ) {
-    const isExistUser = await this.findByEmail(email);
+  async signUp(createUserDto: CreateUserDto) {
+    const isExistUser = await this.findByEmail(createUserDto.email);
 
     if (isExistUser) {
       throw new ConflictException(
@@ -39,26 +35,23 @@ export class UserService {
     }
 
     //어드민으로 가입하는지 확인
-    let isAdmin: boolean = role === 'ADMIN' ? true : false;
-    let point: number = role === 'ADMIN' ? 0 : 1000000;
+    let isAdmin: boolean = createUserDto.role === 'ADMIN' ? true : false;
+    let point: number = createUserDto.role === 'ADMIN' ? 0 : 1000000;
 
     // 비밀 번호 해쉬하기
-    const hashPassword = await hash(password, 10);
+    const hashPassword = await hash(createUserDto.password, 10);
 
     // 유저 데이터베이스에 저장
     const user = await this.userRepository.save({
-      email,
+      email: createUserDto.email,
       password: hashPassword,
-      nickName,
+      nickName: createUserDto.nickName,
       isAdmin,
     });
 
-    await this.pointRepository.save({
-      userId: user.id,
-      point: point,
-    });
+    await this.pointService.setPoint(user, point);
 
-    return 'This action adds a new user';
+    return '가입이 완료되었습니다.';
   }
 
   // 로그인
@@ -67,6 +60,7 @@ export class UserService {
     // [] => 배열 형태로 지정된 경우, 해당 열만을 선택하고 다른 열은 무시
     // {} => 객체 형태로 지정된 경우, 해당 열을 선택하되 추가적인 옵션을 지정
     //       ex) count나 sum 등의 집계 함수를 사용하여 열의 값을 계산,  like, not, in, notIn 등의 연산자를 사용하여 열 값을 필터링
+
     const user = await this.userRepository.findOne({
       select: ['id', 'email', 'password'],
       where: { email },
@@ -85,7 +79,7 @@ export class UserService {
     const access_token = this.jwtService.sign({ userEmail: user.email });
     const refresh_token = this.jwtService.sign({ userId: user.id });
 
-    /**레디스 저장하기 , 리프레시 사용하기**/
+    /**해야 할것 !! 레디스 저장하기 , 리프레시 사용하기**/
 
     return {
       accessToken: access_token,
@@ -103,12 +97,12 @@ export class UserService {
         .getOne(); //쿼리를 실행하고, 결과를 단일 사용자 객체로 가져옴.
 
       if (!user) {
-        throw new NotFoundException('User not found');
+        throw new NotFoundException('해당유저가 존재하지 않습니다.');
       }
 
       return user;
     } catch (error) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException('해당유저가 존재하지 않습니다.');
     }
   }
 

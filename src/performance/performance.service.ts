@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePerformanceDto } from './dto/create-performance.dto';
 import { UpdatePerformanceDto } from './dto/update-performance.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -18,32 +22,34 @@ export class PerformanceService {
   ) {}
 
   // 공연 생성 -> 좌석 같이 생성?
-  async create(
-    userId: bigint,
-    name: string,
-    content: string,
-    date: Date,
-    place: string,
-    totalSeat: number,
-    image: string,
-    category: Category,
-  ) {
+  async create(userId: bigint, createPerformanceDto: CreatePerformanceDto) {
+    const performance = await this.performanceRepository.findOne({
+      where: {
+        name: createPerformanceDto.name,
+        date: createPerformanceDto.date,
+      },
+    });
+
+    if (performance) {
+      throw new ConflictException('해당 공연은 이미 존재합니다.');
+    }
+
     // 공연 만들기
     const performanceId = (
       await this.performanceRepository.save({
-        name,
+        name: createPerformanceDto.name,
         userId: userId,
-        content,
-        date,
-        place,
-        totalSeat,
-        image,
-        category: category,
+        content: createPerformanceDto.content,
+        date: createPerformanceDto.date,
+        place: createPerformanceDto.place,
+        totalSeat: createPerformanceDto.seat,
+        image: createPerformanceDto.image,
+        category: createPerformanceDto.category,
       })
     ).id;
 
     // 좌석 세팅하기
-    for (let seatNum = 1; seatNum <= totalSeat; seatNum++) {
+    for (let seatNum = 1; seatNum <= createPerformanceDto.seat; seatNum++) {
       let grade = null;
       let price = 0;
       if (seatNum <= 10) {

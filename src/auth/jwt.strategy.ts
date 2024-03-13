@@ -3,8 +3,9 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
-import { UserService } from 'src/user/user.service';
 import _ from 'lodash';
+
+import { UserService } from 'src/user/user.service';
 
 // Passport
 // 인증 메커니즘을 캡슐화하고, 다양한 인증 전략을 사용하여 애플리케이션을 쉽게 확장할 수 있도록 돕는 모듈 기반의 유연한 인증 프레임워크
@@ -24,15 +25,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   // Passport의 인증 전략에 따라 자동으로 호출되는 메서드
   async validate(payload: any) {
-    console.log('payload => ', payload);
-
     const user = await this.userService.findByEmail(payload.userEmail);
-    console.log(user);
 
     if (_.isNil(user)) {
       throw new NotFoundException('해당하는 사용자를 찾을 수 없습니다.');
     }
 
-    return user;
+    return user; // 리턴하면 내장 메서드에 의해 자동으로 사용자 객체가 req.user로 설정 됨.
   }
 }

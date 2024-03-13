@@ -26,18 +26,13 @@ export class UserController {
         '비밀번호가 일치하지 않습니다. 확인해주세요',
       );
     }
-    await this.userService.signUp(
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.nickName,
-      createUserDto.role,
-    );
+    return await this.userService.signUp(createUserDto);
   }
 
   @Post('logIn')
   async logIn(
     @Body() loginDto: LoginDto,
-    @Res({ passthrough: true }) response: Response,
+    @Res({ passthrough: true }) response: Response, // passthrough: true => 응답 객체를 컨트롤러에서 직접 반환하지 않고, 해당 응답 객체를 컨트롤러 메서드에서 직접 조작할 때 사용
   ) {
     const token = await this.userService.logIn(
       loginDto.email,
